@@ -1,13 +1,13 @@
-
 {% extends 'rango/base.html' %}
 
-{%  block title %} Adiciona Categoria {% endblock title %}
+{%  block title %} Adiciona Página para {{ category_name }} {% endblock title %}
 
 {% block body_block %}
     <div class="hero-unit">
-        <h2>Adiciona uma Categoria</h2>
+
+        <h2>Adiciona Página para {{ category_name }}</h2>
         <div class="container">
-        <form class="span6" id="category_form" method="post" action={% url 'add_category' %}>
+        <form class="span6" id="page_form" method="post" action={% url 'add_page' category_name_url %}>
             {% csrf_token %}
             {% for hidden in form.hidden_fields %}
                 {{ hidden }}
@@ -16,10 +16,9 @@
             {% for field in form.visible_fields %}
                 {{ field.errors }}
                 {{ field.help_text }}
-                {{ field }}
+                {{ field }}<br/>
             {% endfor %}
-
-            <button class="btn btn-success" type="submit" name="submit">Adicionar Categoria</button>
+            <button class="btn btn-success" type="submit" name="submit">Adicionar Página</button>
         </form>
         </div>
     </div>

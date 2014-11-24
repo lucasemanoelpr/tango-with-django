@@ -1,21 +1,30 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <!-- Is anyone getting tired of repeatedly entering the header over and over?? -->
-        <title>Rango</title>
-    </head>
 
-    <body>
-        <h1>Login to Rango</h1>
+{% extends 'rango/base.html' %}
 
-        <form id="login_form" method="post" action="/rango/login/">
-            {% csrf_token %}
-            Username: <input type="text" name="username" value="" size="50" />
-            <br />
-            Password: <input type="password" name="password" value="" size="50" />
-            <br />
+{%  block title %} Login {% endblock title %}
 
-            <input type="submit" value="submit" />
-        </form>
+{% block body_block %}
+    <div class="hero-unit">
+    <h2>Login no Rango</h2>
+    <div class="container">
+    <form class="form-signin span4" id="login_form" method="post" action={% url 'login' %}>
+        <h3 class="form-signin-heading">Por favor faça o login</h3>
+        {% csrf_token %}
 
-    </body>
+        {% if bad_details %}
+        <p><strong>Seu usuário ou senha estão incorretos!</strong></p>
+        {% elif disabled_account %}
+        <p><strong>Sua conta foi desabilitada; não podemos efetuar o login in!</strong></p>
+        {% endif %}
+
+        Nome do usuário: <input type="text" class="input-block-level" placeholder="Nome do usuário" name="username" value="" size="50" />
+        <br />
+        Senha: <input type="password" class="input-block-level" placeholder="Senha" name="password" value="" size="50" />
+        <br />
+        <button class="btn btn-success" type="submit">Entrar</button>
+    </form>
+
+    </div>
+    <!-- /container -->
+    </div>
+{% endblock body_block %}

@@ -1,0 +1,18 @@
+{% extends 'rango/base.html' %}
+{% load static %}
+
+{%  block title %} Sobre o rango {% endblock title %}
+
+{% block body_block %}
+    <div class="hero-unit">
+    <h2>Sobre o Rango</h2>
+    Olá, eu sou o Rango! <strong> {{ mensagem_negrito }}</strong> <br/>
+    <img src="{{ MEDIA_URL }}rango_camaleao.jpg" alt="Picture of Rango" /> <br/>
+    Você já visitou está página {{ visits }} vezes. <br/>
+    {% if last_visit  %}
+        Sua última visita foi em {{ last_visit }}. <br/>
+    {% else %}
+        Essa é sua primeira visita. <br/>
+    {% endif %}
+    </div>
+{% endblock body_block %}

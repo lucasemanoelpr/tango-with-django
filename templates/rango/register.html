@@ -1,32 +1,41 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Rango</title>
-    </head>
+{% extends 'rango/base.html' %}
 
-    <body>
-        <h1>Register with Rango</h1>
+{%  block title %} Registre-se {% endblock title %}
 
+{% block body_block %}
+<div class="hero-unit">
+    <h2>Registre-se no Rango</h2>
+    <br />
+
+    <div class="container">
         {% if registered %}
-        Rango says: <strong>thank you for registering!</strong>
-        <a href="/rango/">Return to the homepage.</a><br />
+        <h3>Obrigado por se registrar.</h3>
+
+        <p><a href="/rango/login/">Efetue o login</a> quando você estiver pronto.</p>
         {% else %}
-        Rango says: <strong>register here!</strong><br />
-
-        <form id="user_form" method="post" action="/rango/register/"
-                enctype="multipart/form-data">
-
+        <form class="form-signin span8" id="user_form" method="post" action={% url 'register' %}
+              enctype="multipart/form-data">
             {% csrf_token %}
+            <h2 class="form-signin-heading">Assine aqui.</h2>
+            <!-- Display each form here -->
 
-            <!-- Display each form. The as_p method wraps each element in a paragraph
-                 (<p>) element. This ensures each element appears on a new line,
-                 making everything look neater. -->
-            {{ user_form.as_p }}
-            {{ profile_form.as_p }}
+            {% for field in user_form.visible_fields %}
+            {{ field.errors }}
+            {{ field.help_text }}<br />
+            {{ field }}<br />
+            {% endfor %}
 
+            {% for field in profile_form.visible_fields %}
+            {{ field.errors }}
+            {{ field.help_text }}<br />
+            {{ field }}<br />
+            {% endfor %}
+
+            <br />
             <!-- Provide a button to click to submit the form. -->
-            <input type="submit" name="submit" value="Register" />
+            <input class="btn btn-success" type="submit" name="submit" value="Registre-se"/>
         </form>
         {% endif %}
-    </body>
-</html>
+    </div>
+</div>
+{% endblock %}

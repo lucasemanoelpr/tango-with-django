@@ -2,178 +2,256 @@
 #coding: utf-8
 
 from django.http import HttpResponse
+
 from django.template import RequestContext
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response,redirect
 from rango.models import Category
 from rango.models import Page
-from rango.forms import CategoryForm
+from rango.models import UserProfile
+from rango.forms import CategoryForm, PageForm
 from rango.forms import UserForm, UserProfileForm
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
+from django.contrib.auth.models import User
+
+from datetime import datetime
+
+def decode_url(category_name_url):
+    return category_name_url.replace('_', ' ')
+
+def encode_url(category):
+    return category.name.replace(' ', '_')
+
+def get_category_list():
+    cat_list = Category.objects.all()
+
+    for cat in cat_list:
+        cat.url = encode_url(cat)
+
+    return cat_list
+
 
 def index(request):
-    # Solicite o contexto da solicitação.
-    # O contexto contém informações como detalhes da máquina do cliente, por exemplo.
+    #context = {}
     context = RequestContext(request)
+    context_dict = {}
+
+    cat_list = get_category_list()
+    context['cat_list'] = cat_list
 
     category_list = Category.objects.order_by('-likes')[:5]
-    context_dict = {'categories': category_list}
-
+    context['categories'] = category_list
     for category in category_list:
-        category.url = category.name.replace(' ', '_')
+        category.url = encode_url(category)
 
+    page_list = Page.objects.order_by('-views')[:5]
+    context['pages'] = page_list
 
+    if request.session.get('last_visit'):
+        last_visit_time = request.session.get('last_visit')
+        visits = request.session.get('visits', 0)
+
+        if (datetime.now() - datetime.strptime(last_visit_time[:-7], "%Y-%m-%d %H:%M:%S")).seconds > 5:
+            request.session['visits'] = visits + 1
+            request.session['last_visit'] = str(datetime.now())
+    else:
+        request.session['last_visit'] = str(datetime.now())
+        request.session['visits'] = 1
+
+    #print(request.session['visits'], request.session['last_visit'])
     return render_to_response('rango/index.html', context_dict, context)
-
-    # Construir um dicionário para passar para o modelo de motor como o seu contexto.
-    # Observe a boldmessage chave é o mesmo que {{}} boldmessage no modelo!
-    # Retorna uma resposta prestados para enviar para o cliente.
-    # Nós fazemos uso da função de atalho para facilitar nossas vidas.
-    # Note que o primeiro parâmetro é o modelo que deseja usar.
+    #return render(request, 'rango/index.html', context)
 
 
 
 def about(request):
-    return HttpResponse("Rango Says: Here is the about page.  <br> <a href='/rango/'>Index</a>")
+    #context = {}
+    context = RequestContext(request)
+    context_dict = {}
+
+    cat_list = get_category_list()
+    context['cat_list'] = cat_list
+
+    context['mensagem_negrito'] = "Está página explica quem é o Rango."
+
+    if request.session.get('visits'):
+        visits = request.session.get('visits')
+        last_visit = request.session.get('last_visit')
+    else:
+        visits = 0
+
+    context['visits'] = visits
+    context['last_visit'] = last_visit
+
+    return render_to_response('rango/about.html', context_dict, context)
+    #return render(request, 'rango/about.html', context)
+
+
 
 #def static(request):
 
 def category(request, category_name_url):
 
     # Solicite o contexto do pedido transmitido nos
+    #context ={}
     context = RequestContext(request)
+    context_dict = {}
 
+    cat_list = get_category_list()
+    context['cat_list'] = cat_list
     # Mudança destaca no nome da categoria para espaços.
     # URLs não lidar com espaços bem, então codificá-los como sublinhados.
     # Podemos, então, basta substituir os sublinhados com espaços novamente para obter o nome.
-    category_name = category_name_url.replace('_', ' ')
+    category_name = decode_url(category_name_url)
 
     # Criar um dicionário de contexto que podemos passar para o motor de renderização do modelo.
     # Começamos contendo o nome da categoria passou pelo usuário.
 
-    context_dict = {'category_name': category_name}
+    context['category_name'] = category_name
+    context['category_name_url'] = category_name_url
+
     try:
-        # Podemos encontrar uma categoria com o nome dado
-        # Se não podemos, o método .get () gera uma exceção DoesNotExist
-        # Assim, o método .get () retorna uma instância do modelo ou levanta uma exceção
         category = Category.objects.get(name=category_name)
-
-        # Recuperar todas as páginas associadas.
-        # Note que instância de filtro returns> = 1 modelo.
-        pages = Page.objects.filter(category=category)
-
-        # Adiciona a nossa lista de resultados para o contexto do modelo sob páginas nome.
-        context_dict['pages'] = pages
-
-        # Nós também adicionar o objeto categoria do banco de dados para o dicionário de contexto.
-        # Usaremos este no modelo para verificar que a categoria existe.
-        context_dict['category'] = category
+        context['category'] = category
+        page_list = Page.objects.filter(category=category)
+        context['pages'] = page_list
 
     except Category.DoesNotExist:
-        # chegamos aqui se não encontrar a categoria especificada.
-        # Não fazer nada - o modelo exibe a mensagem "nenhuma categoria" para nós.
         pass
 
-    # Vai tornar a resposta e enviá-lo para o cliente.
     return render_to_response('rango/category.html', context_dict, context)
+    #return render(request, 'rango/category.html', context)
 
 
-
+@login_required
 
 def add_category(request):
     # Get the context from the request.
+    #context = {}
     context = RequestContext(request)
+    context_dict = {}
+
+    cat_list = get_category_list()
+    context['cat_list'] = cat_list
 
     # A HTTP POST?
-    if request.method == 'POST':
+    if request.method != 'POST':
+        form = CategoryForm()
+    else:
         form = CategoryForm(request.POST)
-
-        # Have we been provided with a valid form?
         if form.is_valid():
-            # Save the new category to the database.
             form.save(commit=True)
-
-            # Now call the index() view.
-            # The user will be shown the homepage.
             return index(request)
         else:
-            # The supplied form contained errors - just print them to the terminal.
+            print form.errors
+
+    context['form'] = form
+    return render_to_response('rango/add_category.html', context_dict, context)
+
+    #return render(request, 'rango/add_category.html', context)
+
+@login_required
+
+def add_page(request, category_name_url):
+    #context = {}
+    context = RequestContext(request)
+    context_dict = {}
+
+    cat_list = get_category_list()
+    context['cat_list'] = cat_list
+
+    context['category_name_url'] = category_name_url
+
+    category_name = decode_url(category_name_url)
+    context['category_name'] = category_name
+
+    if request.method == 'POST':
+        form = PageForm(request.POST)
+
+        if form.is_valid():
+            page = form.save(commit=False)
+            try:
+                cat = Category.objects.get(name=category_name)
+                page.category = cat
+            except Category.DoesNotExist:
+                return render(request, 'rango/add_page.html', context)
+            page.views = 0
+            page.save()
+            return category(request, category_name_url)
+        else:
             print form.errors
     else:
-        # If the request was not a POST, display the form to enter details.
-        form = CategoryForm()
+        form = PageForm()
 
-    # Bad form (or form details), no form supplied...
-    # Render the form with error messages (if any).
-    return render_to_response('rango/add_category.html', {'form': form}, context)
+    context['form'] = form
+
+    return render_to_response('rango/add_page.html', context_dict, context)
+    #return render(request, 'rango/add_page.html', context)
+
 
 
 def register(request):
     # Like before, get the request's context.
+    #context = {}
     context = RequestContext(request)
+    context_dict = {}
+
+    cat_list = get_category_list()
+    context['cat_list'] = cat_list
 
     # A boolean value for telling the template whether the registration was successful.
     # Set to False initially. Code changes value to True when registration succeeds.
     registered = False
 
-    # If it's a HTTP POST, we're interested in processing form data.
+    registered = False
+
     if request.method == 'POST':
-        # Attempt to grab information from the raw form information.
-        # Note that we make use of both UserForm and UserProfileForm.
         user_form = UserForm(data=request.POST)
         profile_form = UserProfileForm(data=request.POST)
 
-        # If the two forms are valid...
         if user_form.is_valid() and profile_form.is_valid():
-            # Save the user's form data to the database.
             user = user_form.save()
-
-            # Now we hash the password with the set_password method.
-            # Once hashed, we can update the user object.
+            # print('Senha antes: %s' %user.password)
             user.set_password(user.password)
             user.save()
+            # print('Senha depois: %s' %user.password)
 
-            # Now sort out the UserProfile instance.
-            # Since we need to set the user attribute ourselves, we set commit=False.
-            # This delays saving the model until we're ready to avoid integrity problems.
             profile = profile_form.save(commit=False)
             profile.user = user
 
-            # Did the user provide a profile picture?
-            # If so, we need to get it from the input form and put it in the UserProfile model.
             if 'picture' in request.FILES:
                 profile.picture = request.FILES['picture']
 
-            # Now we save the UserProfile model instance.
             profile.save()
 
-            # Update our variable to tell the template registration was successful.
             registered = True
-
-        # Invalid form or forms - mistakes or something else?
-        # Print problems to the terminal.
-        # They'll also be shown to the user.
         else:
             print user_form.errors, profile_form.errors
-
-    # Not a HTTP POST, so we render our form using two ModelForm instances.
-    # These forms will be blank, ready for user input.
     else:
         user_form = UserForm()
         profile_form = UserProfileForm()
 
-    # Render the template depending on the context.
-    return render_to_response(
-            'rango/register.html',
-            {'user_form': user_form, 'profile_form': profile_form, 'registered': registered},
-            context)
+    context['user_form'] = user_form
+    context['profile_form'] = profile_form
+    context['registered'] = registered
+
+    return render_to_response('rango/register.html', context_dict, context)
+
+    #return render(request,'rango/register.html', context)
+
 
 
 def user_login(request):
     # Like before, obtain the context for the user's request.
+    #context = {}
     context = RequestContext(request)
+    context_dict = {}
+
+
+    cat_list = get_category_list()
+    context['cat_list'] = cat_list
 
     # If the request is a HTTP POST, try to pull out the relevant information.
     if request.method == 'POST':
@@ -198,31 +276,35 @@ def user_login(request):
                 return HttpResponseRedirect('/rango/')
             else:
                 # An inactive account was used - no logging in!
-                return HttpResponse("Your Rango account is disabled.")
+                return HttpResponse(" Sua conta no rango está desabilitada.")
         else:
             # Bad login details were provided. So we can't log the user in.
-            print "Invalid login details: {0}, {1}".format(username, password)
-            return HttpResponse("Invalid login details supplied.")
+            print " Detalhes de login inválidos: {0}, {1}".format(username, password)
+            return HttpResponse("Detalhes Inválidos de login.")
 
     # The request is not a HTTP POST, so display the login form.
     # This scenario would most likely be a HTTP GET.
     else:
         # No context variables to pass to the template system, hence the
         # blank dictionary object...
-        return render_to_response('rango/login.html', {}, context)
-
-
-def some_view(request):
-    if not request.user.is_authenticated():
-        return HttpResponse("You are logged in.")
-    else:
-        return HttpResponse("You are not logged in.")
-
+        #return render(request, 'rango/login.html',context)
+        return render_to_response('rango/login.html', context_dict, context)
 
 @login_required
 
 def restricted(request):
-    return HttpResponse("Since you're logged in, you can see this text!")
+    #context = {}
+    context = RequestContext(request)
+    context_dict = {}
+
+    cat_list = get_category_list()
+    context['cat_list'] = cat_list
+    context['texto'] = "Você pode ler esse texto, pois está logado!"
+
+    return render_to_response('rango/restricted.html', context_dict, context)
+
+    #return render(request, 'rango/restricted.html', context)
+
 
 # Use the login_required() decorator to ensure only those logged in can access the view.
 
@@ -234,3 +316,41 @@ def user_logout(request):
 
     # Take the user back to the homepage.
     return HttpResponseRedirect('/rango/')
+
+
+def profile(request):
+
+    context = RequestContext(request)
+    context_dict = {}
+    cat_list = get_category_list()
+    context_dict['cat_list']= cat_list
+
+    u = User.objects.get(username=request.user)
+
+    try:
+        up = UserProfile.objects.get(user=u)
+    except:
+        up = None
+
+    context['user'] = u
+    context['userprofile'] = up
+    #return render(request, 'rango/profile.html', context)
+    return render_to_response('rango/profile.html', context_dict, context)
+
+
+def track_url(request):
+    context = RequestContext(request)
+    page_id = None
+    url = '/rango/'
+    if request.method == 'GET':
+        if 'page_id' in request.GET:
+            page_id = request.GET['page_id']
+            try:
+                page = Page.objects.get(id=page_id)
+                page.views = page.views + 1
+                page.save()
+                url = page.url
+            except:
+                pass
+
+    return redirect(url)

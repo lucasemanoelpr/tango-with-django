@@ -4,7 +4,7 @@ from rango.models import UserProfile
 from django.contrib.auth.models import User
 
 class CategoryForm(forms.ModelForm):
-    name = forms.CharField(max_length=128, help_text="Please enter the category name.")
+    name = forms.CharField(max_length=128, help_text="Informe o nome da categoria:")
     views = forms.IntegerField(widget=forms.HiddenInput(), initial=0)
     likes = forms.IntegerField(widget=forms.HiddenInput(), initial=0)
 
@@ -14,8 +14,8 @@ class CategoryForm(forms.ModelForm):
         model = Category
 
 class PageForm(forms.ModelForm):
-    title = forms.CharField(max_length=128, help_text="Please enter the title of the page.")
-    url = forms.URLField(max_length=200, help_text="Please enter the URL of the page.")
+    title = forms.CharField(max_length=128, help_text="Informe o titulo da pagina:")
+    url = forms.URLField(max_length=200, help_text="Informe a url da pagina:")
     views = forms.IntegerField(widget=forms.HiddenInput(), initial=0)
 
     class Meta:
@@ -39,16 +39,24 @@ class PageForm(forms.ModelForm):
 
         return cleaned_data
 
+
+
 class UserForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput())
+    username = forms.CharField(help_text="Informe o nome do usuario")
+    email = forms.CharField(help_text="Informe seu email")
+    password = forms.CharField(widget=forms.PasswordInput(), help_text="Informe uma senha")
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password')
+        fields = ['username', 'email', 'password']
 
 class UserProfileForm(forms.ModelForm):
+    website = forms.URLField(help_text="Informe seu website", required=False)
+    picture = forms.ImageField(help_text="Selecione uma imagem de perfil para upload ", required=False)
+
     class Meta:
         model = UserProfile
-        fields = ('website', 'picture')
+        fields = ['website', 'picture']
+
 
 
