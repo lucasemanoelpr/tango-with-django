@@ -1,4 +1,4 @@
-Django==1.5.4
+Django==1.11.29
 Mako==0.8.1
 MarkupSafe==0.15
 PAM==0.4.2
