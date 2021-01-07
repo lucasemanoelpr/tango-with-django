@@ -24,7 +24,7 @@ launchpadlib==1.10.2
 lazr.restfulclient==0.13.3
 lazr.uri==1.0.3
 lockfile==0.8
-lxml==3.2.0
+lxml==4.6.2
 oauth==1.0.1
 oauthlib==0.5.1
 oneconf==0.3.5
