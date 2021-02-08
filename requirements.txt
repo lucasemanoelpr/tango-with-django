@@ -18,7 +18,7 @@ defer==1.0.6
 dirspec==13.10
 distribute==0.6.37
 duplicity==0.6.21
-httplib2==0.8
+httplib2==0.19.0
 keyring==1.6
 launchpadlib==1.10.2
 lazr.restfulclient==0.13.3
