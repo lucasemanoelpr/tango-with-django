@@ -1,5 +1,5 @@
 Django==1.5.4
-Mako==0.8.1
+Mako==1.2.2
 MarkupSafe==0.15
 PAM==0.4.2
 Pillow==2.0.0
