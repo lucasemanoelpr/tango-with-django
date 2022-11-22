@@ -2,7 +2,7 @@ Django==1.5.4
 Mako==0.8.1
 MarkupSafe==0.15
 PAM==0.4.2
-Pillow==2.0.0
+Pillow==9.3.0
 SecretStorage==1.0.0
 Twisted-Core==13.0.0
 Twisted-Names==13.0.0
